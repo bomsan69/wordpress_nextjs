@@ -20,6 +20,11 @@ services:
     restart: unless-stopped
     networks:
       - ksenior-network
+    # 👇 여기 추가
+    dns:
+          - 8.8.8.8     # Google DNS
+          - 1.1.1.1     # Cloudflare DNS
+
 
 networks:
   ksenior-network:
