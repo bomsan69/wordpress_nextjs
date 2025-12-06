@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-rgb: 255, 255, 255;
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: rgb(var(--background-rgb));
+  font-size: 18px;
+}
+
+/* 70대 노인을 위한 큰 글씨와 여유있는 간격 */
+* {
+  line-height: 1.6;
+}
+
+button, input, select, textarea {
+  font-size: 18px;
+  min-height: 48px;
+}
+
+button {
+  cursor: pointer;
+}
