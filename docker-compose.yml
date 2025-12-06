@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  ksenior-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ksenior-app
+    ports:
+      - "8003:8003"
+    environment:
+      - NODE_ENV=production
+      - ADMIN_ID=${ADMIN_ID:-kseniorusa}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - WORDPRESS_URL=${WORDPRESS_URL:-https://kseniorusa.org}
+      - WORDPRESS_USERNAME=${WORDPRESS_USERNAME:-bomsan}
+      - WORDPRESS_APP_PASSWORD=${WORDPRESS_APP_PASSWORD}
+    env_file:
+      - .env
+    restart: unless-stopped
+    networks:
+      - ksenior-network
+
+networks:
+  ksenior-network:
+    driver: bridge
