@@ -2,7 +2,7 @@
 
 import { WPCategory, WPUser } from "@/types/wordpress";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 
 interface SearchFilterProps {
   categories: WPCategory[];
@@ -13,6 +13,7 @@ interface SearchFilterProps {
 export function SearchFilter({ categories, users, currentPeriod }: SearchFilterProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
 
   const [period, setPeriod] = useState(
     searchParams.get("period") || currentPeriod || "1m"
@@ -33,7 +34,9 @@ export function SearchFilter({ categories, users, currentPeriod }: SearchFilterP
     if (selectedAuthor) params.set("author", selectedAuthor);
     params.set("page", "1");
 
-    router.push(`/posts?${params.toString()}`);
+    startTransition(() => {
+      router.push(`/posts?${params.toString()}`);
+    });
   }
 
   function handleReset() {
@@ -121,14 +124,42 @@ export function SearchFilter({ categories, users, currentPeriod }: SearchFilterP
         <div className="flex space-x-4">
           <button
             type="submit"
-            className="flex-1 bg-blue-600 text-white px-6 py-4 rounded-lg text-senior-lg font-medium hover:bg-blue-700 transition-colors"
+            disabled={isPending}
+            className="flex-1 bg-blue-600 text-white px-6 py-4 rounded-lg text-senior-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
           >
-            검색
+            {isPending ? (
+              <>
+                <svg
+                  className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                조회 중...
+              </>
+            ) : (
+              "검색"
+            )}
           </button>
           <button
             type="button"
             onClick={handleReset}
-            className="flex-1 bg-gray-300 text-gray-700 px-6 py-4 rounded-lg text-senior-lg font-medium hover:bg-gray-400 transition-colors"
+            disabled={isPending}
+            className="flex-1 bg-gray-300 text-gray-700 px-6 py-4 rounded-lg text-senior-lg font-medium hover:bg-gray-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             초기화
           </button>
