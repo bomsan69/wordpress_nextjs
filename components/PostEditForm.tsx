@@ -1,8 +1,8 @@
 "use client";
 
 import { WPCategory, WPUser, WPPost } from "@/types/wordpress";
-import { updateExistingPost } from "@/app/edit/[id]/actions";
-import { useState, useRef } from "react";
+import { updateExistingPost, getEditCsrfToken } from "@/app/edit/[id]/actions";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 interface PostEditFormProps {
@@ -17,8 +17,18 @@ export function PostEditForm({ post, categories, users }: PostEditFormProps) {
   const [contentLength, setContentLength] = useState(
     post.content.rendered.replace(/<[^>]*>/g, "").length
   );
+  const [csrfToken, setCsrfToken] = useState<string>("");
   const formRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
+
+  // CSRF 토큰 로드
+  useEffect(() => {
+    async function loadCsrfToken() {
+      const token = await getEditCsrfToken();
+      setCsrfToken(token);
+    }
+    loadCsrfToken();
+  }, []);
 
   async function handleSubmit(formData: FormData) {
     setIsSubmitting(true);
@@ -45,6 +55,9 @@ export function PostEditForm({ post, categories, users }: PostEditFormProps) {
 
   return (
     <form ref={formRef} action={handleSubmit} className="space-y-8">
+      {/* CSRF 토큰 */}
+      <input type="hidden" name="csrf-token" value={csrfToken} />
+
       <div>
         <label
           htmlFor="title"

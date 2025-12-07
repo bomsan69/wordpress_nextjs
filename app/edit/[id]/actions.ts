@@ -3,7 +3,12 @@
 import { updatePost } from "@/lib/wordpress";
 import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth";
-import { validateCsrfToken } from "@/lib/csrf";
+import { validateCsrfToken, getCsrfToken } from "@/lib/csrf";
+
+// CSRF 토큰 가져오기
+export async function getEditCsrfToken(): Promise<string> {
+  return await getCsrfToken();
+}
 
 export async function updateExistingPost(postId: number, formData: FormData) {
   // Authentication check

@@ -1,8 +1,8 @@
 "use client";
 
 import { WPCategory, WPUser } from "@/types/wordpress";
-import { createNewPost } from "@/app/posts/new/actions";
-import { useState, useRef } from "react";
+import { createNewPost, getPostCsrfToken } from "@/app/posts/new/actions";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 interface PostFormProps {
@@ -14,8 +14,18 @@ export function PostForm({ categories, users }: PostFormProps) {
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [contentLength, setContentLength] = useState(0);
+  const [csrfToken, setCsrfToken] = useState<string>("");
   const formRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
+
+  // CSRF 토큰 로드
+  useEffect(() => {
+    async function loadCsrfToken() {
+      const token = await getPostCsrfToken();
+      setCsrfToken(token);
+    }
+    loadCsrfToken();
+  }, []);
 
   // 기본값 찾기
   const sleeplessCategory = categories.find(
@@ -47,6 +57,9 @@ export function PostForm({ categories, users }: PostFormProps) {
 
   return (
     <form ref={formRef} action={handleSubmit} className="space-y-8">
+      {/* CSRF 토큰 */}
+      <input type="hidden" name="csrf-token" value={csrfToken} />
+
       <div>
         <label
           htmlFor="title"

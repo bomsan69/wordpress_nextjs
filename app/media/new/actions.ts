@@ -3,8 +3,13 @@
 import { uploadMedia } from "@/lib/wordpress";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
-import { validateCsrfToken } from "@/lib/csrf";
+import { validateCsrfToken, getCsrfToken } from "@/lib/csrf";
 import { validateFile } from "@/lib/validation";
+
+// CSRF 토큰 가져오기
+export async function getMediaCsrfToken(): Promise<string> {
+  return await getCsrfToken();
+}
 
 export async function uploadMediaAction(formData: FormData) {
   // Authentication check

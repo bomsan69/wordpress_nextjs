@@ -2,7 +2,12 @@
 
 import { sendEmail } from "@/lib/sendmail";
 import { getSession } from "@/lib/auth";
-import { validateCsrfToken } from "@/lib/csrf";
+import { validateCsrfToken, getCsrfToken } from "@/lib/csrf";
+
+// CSRF 토큰 가져오기
+export async function getEmailCsrfToken(): Promise<string> {
+  return await getCsrfToken();
+}
 
 export async function sendEmailAction(formData: FormData) {
   // Authentication check

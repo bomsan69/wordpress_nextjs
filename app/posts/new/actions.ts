@@ -4,7 +4,12 @@ import { createPost } from "@/lib/wordpress";
 import { sendEmail } from "@/lib/sendmail";
 import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth";
-import { validateCsrfToken } from "@/lib/csrf";
+import { validateCsrfToken, getCsrfToken } from "@/lib/csrf";
+
+// CSRF 토큰 가져오기
+export async function getPostCsrfToken(): Promise<string> {
+  return await getCsrfToken();
+}
 
 export async function createNewPost(formData: FormData) {
   // Authentication check

@@ -2,7 +2,12 @@
 
 import { redirect } from "next/navigation";
 import { validateLogin, createSession } from "@/lib/auth";
-import { validateCsrfToken } from "@/lib/csrf";
+import { validateCsrfToken, getCsrfToken } from "@/lib/csrf";
+
+// CSRF 토큰을 클라이언트에서 가져올 수 있도록 하는 Server Action
+export async function getLoginCsrfToken(): Promise<string> {
+  return await getCsrfToken();
+}
 
 export async function login(formData: FormData) {
   // CSRF protection
@@ -22,9 +27,6 @@ export async function login(formData: FormData) {
     if (!isValid) {
       return { error: "아이디 또는 비밀번호가 올바르지 않습니다." };
     }
-
-    await createSession();
-    redirect("/posts");
   } catch (error) {
     // Handle rate limiting errors
     if (error instanceof Error) {
@@ -32,4 +34,8 @@ export async function login(formData: FormData) {
     }
     return { error: "로그인 처리 중 오류가 발생했습니다." };
   }
+
+  // redirect()는 try-catch 밖에서 호출해야 함
+  await createSession();
+  redirect("/posts");
 }

@@ -1,10 +1,20 @@
 "use client";
 
-import { login } from "./actions";
-import { useState } from "react";
+import { login, getLoginCsrfToken } from "./actions";
+import { useState, useEffect } from "react";
 
 export default function LoginPage() {
   const [error, setError] = useState<string>("");
+  const [csrfToken, setCsrfToken] = useState<string>("");
+
+  // CSRF 토큰 로드
+  useEffect(() => {
+    async function loadCsrfToken() {
+      const token = await getLoginCsrfToken();
+      setCsrfToken(token);
+    }
+    loadCsrfToken();
+  }, []);
 
   async function handleSubmit(formData: FormData) {
     const result = await login(formData);
@@ -25,6 +35,9 @@ export default function LoginPage() {
           </p>
         </div>
         <form className="mt-8 space-y-6" action={handleSubmit}>
+          {/* CSRF 토큰 */}
+          <input type="hidden" name="csrf-token" value={csrfToken} />
+
           <div className="space-y-6">
             <div>
               <label

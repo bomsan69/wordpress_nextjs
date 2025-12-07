@@ -1,9 +1,9 @@
 "use client";
 
 import { WPPost } from "@/types/wordpress";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { sendEmailAction } from "@/app/send-email/[id]/actions";
+import { sendEmailAction, getEmailCsrfToken } from "@/app/send-email/[id]/actions";
 
 interface EmailFormProps {
   post: WPPost;
@@ -13,6 +13,16 @@ export function EmailForm({ post }: EmailFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [csrfToken, setCsrfToken] = useState<string>("");
+
+  // CSRF 토큰 로드
+  useEffect(() => {
+    async function loadCsrfToken() {
+      const token = await getEmailCsrfToken();
+      setCsrfToken(token);
+    }
+    loadCsrfToken();
+  }, []);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -39,6 +49,9 @@ export function EmailForm({ post }: EmailFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* CSRF 토큰 */}
+      <input type="hidden" name="csrf-token" value={csrfToken} />
+
       {error && (
         <div className="bg-red-50 border-2 border-red-200 text-red-700 px-4 py-3 rounded-lg text-senior-base">
           {error}

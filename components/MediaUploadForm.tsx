@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef, FormEvent } from "react";
-import { uploadMediaAction } from "@/app/media/new/actions";
+import { useState, useRef, FormEvent, useEffect } from "react";
+import { uploadMediaAction, getMediaCsrfToken } from "@/app/media/new/actions";
 
 export function MediaUploadForm() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -10,7 +10,17 @@ export function MediaUploadForm() {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState("");
+  const [csrfToken, setCsrfToken] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // CSRF 토큰 로드
+  useEffect(() => {
+    async function loadCsrfToken() {
+      const token = await getMediaCsrfToken();
+      setCsrfToken(token);
+    }
+    loadCsrfToken();
+  }, []);
 
   function handleFileSelect(file: File) {
     if (!file.type.startsWith("image/")) {
@@ -75,6 +85,7 @@ export function MediaUploadForm() {
       const formData = new FormData();
       formData.append("file", selectedFile);
       formData.append("title", title);
+      formData.append("csrf-token", csrfToken);
 
       await uploadMediaAction(formData);
     } catch (err) {
