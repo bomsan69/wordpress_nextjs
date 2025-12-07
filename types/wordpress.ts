@@ -98,3 +98,59 @@ export interface PostFilters {
   page?: number;
   perPage?: number;
 }
+
+export interface WPMedia {
+  id: number;
+  date: string;
+  date_gmt: string;
+  modified: string;
+  modified_gmt: string;
+  slug: string;
+  status: string;
+  type: string;
+  link: string;
+  title: {
+    rendered: string;
+  };
+  author: number;
+  caption: {
+    rendered: string;
+  };
+  alt_text: string;
+  media_type: string;
+  mime_type: string;
+  media_details: {
+    width: number;
+    height: number;
+    file: string;
+    sizes: {
+      thumbnail?: {
+        file: string;
+        width: number;
+        height: number;
+        mime_type: string;
+        source_url: string;
+      };
+      medium?: {
+        file: string;
+        width: number;
+        height: number;
+        mime_type: string;
+        source_url: string;
+      };
+      full?: {
+        file: string;
+        width: number;
+        height: number;
+        mime_type: string;
+        source_url: string;
+      };
+    };
+  };
+  source_url: string;
+}
+
+export interface MediaFilters {
+  page?: number;
+  perPage?: number;
+}

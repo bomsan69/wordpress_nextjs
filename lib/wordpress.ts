@@ -5,6 +5,8 @@ import {
   WPListResponse,
   PostFormData,
   PostFilters,
+  WPMedia,
+  MediaFilters,
 } from "@/types/wordpress";
 
 const WP_URL = process.env.WORDPRESS_URL;
@@ -217,6 +219,105 @@ export async function getUsers(): Promise<WPUser[]> {
 // 포스트 삭제
 export async function deletePost(id: number): Promise<void> {
   await wpFetch(`/posts/${id}`, {
+    method: "DELETE",
+  });
+}
+
+// 미디어 목록 조회
+export async function getMedia(
+  filters: MediaFilters = {}
+): Promise<WPListResponse<WPMedia>> {
+  const { page = 1, perPage = 20 } = filters;
+
+  const params = new URLSearchParams({
+    page: page.toString(),
+    per_page: perPage.toString(),
+    media_type: "image", // 이미지만 조회
+  });
+
+  const endpoint = `/media?${params.toString()}`;
+  const url = `${WP_URL}/wp-json/wp/v2${endpoint}`;
+
+  const headers: Record<string, string> = {
+    "Authorization": getAuthHeader(),
+  };
+
+  const response = await fetch(url, {
+    headers,
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    let errorMessage = `WordPress API Error: ${response.status} ${response.statusText}`;
+    try {
+      const errorData = await response.json();
+      if (errorData.message) {
+        errorMessage = `WordPress API Error: ${errorData.message}`;
+      }
+    } catch (e) {
+      // 에러 응답 파싱 실패 시 기본 메시지 사용
+    }
+    throw new Error(errorMessage);
+  }
+
+  const data = await response.json();
+  const total = parseInt(response.headers.get("X-WP-Total") || "0");
+  const totalPages = parseInt(response.headers.get("X-WP-TotalPages") || "0");
+
+  return {
+    data,
+    total,
+    totalPages,
+  };
+}
+
+// 미디어 업로드
+export async function uploadMedia(
+  file: File,
+  title: string
+): Promise<WPMedia> {
+  if (!WP_URL) {
+    throw new Error("WordPress URL not configured");
+  }
+
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("title", title);
+
+  const url = `${WP_URL}/wp-json/wp/v2/media`;
+  const headers: Record<string, string> = {
+    Authorization: getAuthHeader(),
+  };
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers,
+    body: formData,
+  });
+
+  if (!response.ok) {
+    let errorMessage = `WordPress API Error: ${response.status} ${response.statusText}`;
+    try {
+      const errorData = await response.json();
+      if (errorData.message) {
+        errorMessage = `WordPress API Error: ${errorData.message}`;
+      }
+      if (errorData.code) {
+        errorMessage += ` (코드: ${errorData.code})`;
+      }
+      console.error("WordPress API Error Details:", errorData);
+    } catch (e) {
+      console.error("Failed to parse error response");
+    }
+    throw new Error(errorMessage);
+  }
+
+  return response.json();
+}
+
+// 미디어 삭제
+export async function deleteMedia(id: number): Promise<void> {
+  await wpFetch(`/media/${id}?force=true`, {
     method: "DELETE",
   });
 }
