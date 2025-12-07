@@ -3,6 +3,12 @@
 import { deleteMedia } from "@/lib/wordpress";
 import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth";
+import { getCsrfToken } from "@/lib/csrf";
+
+// Get CSRF token for client-side use
+export async function getCsrfTokenAction(): Promise<string> {
+  return await getCsrfToken();
+}
 
 export async function deleteMediaAction(mediaId: number, csrfToken?: string) {
   // Authentication check

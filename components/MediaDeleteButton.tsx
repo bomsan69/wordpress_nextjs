@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { deleteMediaAction } from "@/app/media/actions";
+import { useState, useEffect } from "react";
+import { deleteMediaAction, getCsrfTokenAction } from "@/app/media/actions";
 
 interface MediaDeleteButtonProps {
   mediaId: number;
@@ -14,11 +14,26 @@ export function MediaDeleteButton({
 }: MediaDeleteButtonProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [csrfToken, setCsrfToken] = useState<string>("");
+
+  // Load CSRF token on mount
+  useEffect(() => {
+    async function loadToken() {
+      try {
+        const token = await getCsrfTokenAction();
+        setCsrfToken(token);
+      } catch (error) {
+        console.error("Failed to load CSRF token");
+      }
+    }
+    loadToken();
+  }, []);
 
   async function handleDelete() {
     setIsDeleting(true);
     try {
-      const result = await deleteMediaAction(mediaId);
+      // Pass CSRF token to server action
+      const result = await deleteMediaAction(mediaId, csrfToken);
       if (result.success) {
         setShowConfirm(false);
       } else {
@@ -41,7 +56,7 @@ export function MediaDeleteButton({
     <>
       <button
         onClick={() => setShowConfirm(true)}
-        disabled={isDeleting}
+        disabled={isDeleting || !csrfToken}
         className="w-full bg-red-600 text-white px-4 py-2 rounded-lg text-senior-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isDeleting ? "삭제 중..." : "삭제"}

@@ -4,6 +4,12 @@ import { deletePost } from "@/lib/wordpress";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
+import { getCsrfToken } from "@/lib/csrf";
+
+// Get CSRF token for client-side use
+export async function getCsrfTokenAction(): Promise<string> {
+  return await getCsrfToken();
+}
 
 export async function deletePostAction(postId: number, csrfToken?: string) {
   // Authentication check

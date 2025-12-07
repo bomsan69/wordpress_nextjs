@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { randomBytes } from "crypto";
+import { randomBytes, timingSafeEqual } from "crypto";
 
 const CSRF_COOKIE_NAME = "csrf-token";
 
@@ -30,7 +30,7 @@ export async function getCsrfToken(): Promise<string> {
   return await generateCsrfToken();
 }
 
-// Validate CSRF token
+// Validate CSRF token with timing-safe comparison
 export async function validateCsrfToken(token: string | null): Promise<boolean> {
   if (!token) {
     return false;
@@ -43,7 +43,20 @@ export async function validateCsrfToken(token: string | null): Promise<boolean> 
     return false;
   }
 
-  return storedToken.value === token;
+  // Use timing-safe comparison to prevent timing attacks
+  try {
+    const tokenBuffer = Buffer.from(token);
+    const storedBuffer = Buffer.from(storedToken.value);
+
+    // Ensure both tokens have the same length
+    if (tokenBuffer.length !== storedBuffer.length) {
+      return false;
+    }
+
+    return timingSafeEqual(tokenBuffer, storedBuffer);
+  } catch {
+    return false;
+  }
 }
 
 // Delete CSRF token

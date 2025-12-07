@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { deletePostAction } from "@/app/posts/[id]/actions";
+import { deletePostAction, getCsrfTokenAction } from "@/app/posts/[id]/actions";
 
 interface DeleteButtonProps {
   postId: number;
@@ -12,6 +12,20 @@ interface DeleteButtonProps {
 export function DeleteButton({ postId, postTitle }: DeleteButtonProps) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [csrfToken, setCsrfToken] = useState<string>("");
+
+  // Load CSRF token on mount
+  useEffect(() => {
+    async function loadToken() {
+      try {
+        const token = await getCsrfTokenAction();
+        setCsrfToken(token);
+      } catch (error) {
+        console.error("Failed to load CSRF token");
+      }
+    }
+    loadToken();
+  }, []);
 
   async function handleDelete() {
     const confirmed = window.confirm(
@@ -25,7 +39,8 @@ export function DeleteButton({ postId, postTitle }: DeleteButtonProps) {
     setIsDeleting(true);
 
     try {
-      const result = await deletePostAction(postId);
+      // Pass CSRF token to server action
+      const result = await deletePostAction(postId, csrfToken);
 
       if (result.error) {
         alert(`삭제 실패: ${result.error}`);
@@ -44,7 +59,7 @@ export function DeleteButton({ postId, postTitle }: DeleteButtonProps) {
   return (
     <button
       onClick={handleDelete}
-      disabled={isDeleting}
+      disabled={isDeleting || !csrfToken}
       className="px-6 py-3 bg-red-600 text-white rounded-lg text-senior-base font-medium hover:bg-red-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed min-h-[48px]"
     >
       {isDeleting ? "삭제 중..." : "삭제"}
