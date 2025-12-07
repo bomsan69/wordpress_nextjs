@@ -179,15 +179,15 @@ npm run build
 다음 credentials가 소스코드/Git에 노출되었으므로 **즉시 재발급** 필요:
 
 1. **Admin Password**
-   - 노출: `jaycho1151!@`
+   - 노출: `[REDACTED - 이미 재발급됨]`
    - 조치: 새 비밀번호 설정 후 해시 생성
 
 2. **WordPress Application Password**
-   - 노출: `0eZE wgkM 3gYV Pbqt D5yX uJaN`
+   - 노출: `[REDACTED - 재발급 필요]`
    - 조치: WordPress에서 재발급
 
 3. **Email API Key**
-   - 노출: `d91f0a72929403aee77799434c9a0fd230e681ff0bb095d3dc556393ab752c50`
+   - 노출: `[REDACTED - 재발급 필요]`
    - 조치: Bora Net에 연락하여 재발급
 
 ---
