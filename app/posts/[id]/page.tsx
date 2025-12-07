@@ -3,6 +3,7 @@ import { getPost } from "@/lib/wordpress";
 import { Navbar } from "@/components/Navbar";
 import { DeleteButton } from "@/components/DeleteButton";
 import { notFound } from "next/navigation";
+import { sanitizeHTML, isHTMLSafe } from "@/lib/html-sanitizer";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +31,14 @@ export default async function PostDetailPage({ params }: PageProps) {
   const author = post._embedded?.author?.[0]?.name || "알 수 없음";
   const categoryNames =
     post._embedded?.["wp:term"]?.[0]?.map((cat) => cat.name) || [];
+
+  // Sanitize HTML content to prevent XSS attacks
+  const sanitizedContent = sanitizeHTML(post.content.rendered);
+
+  // Additional safety check
+  if (!isHTMLSafe(sanitizedContent)) {
+    notFound(); // Reject obviously malicious content
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -82,7 +91,7 @@ export default async function PostDetailPage({ params }: PageProps) {
           <div className="px-8 py-8">
             <div
               className="prose prose-lg max-w-none text-senior-base leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: post.content.rendered }}
+              dangerouslySetInnerHTML={{ __html: sanitizedContent }}
               style={{
                 fontSize: "20px",
                 lineHeight: "1.8",

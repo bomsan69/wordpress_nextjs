@@ -3,8 +3,23 @@
 import { deletePost } from "@/lib/wordpress";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getSession } from "@/lib/auth";
 
-export async function deletePostAction(postId: number) {
+export async function deletePostAction(postId: number, csrfToken?: string) {
+  // Authentication check
+  const isAuthenticated = await getSession();
+  if (!isAuthenticated) {
+    return { error: "인증이 필요합니다. 다시 로그인해주세요." };
+  }
+
+  // CSRF protection
+  const { validateCsrfToken } = await import("@/lib/csrf");
+  const isValidCsrf = await validateCsrfToken(csrfToken || null);
+
+  if (!isValidCsrf) {
+    return { error: "잘못된 요청입니다. 페이지를 새로고침 후 다시 시도해주세요." };
+  }
+
   try {
     await deletePost(postId);
 
@@ -13,11 +28,12 @@ export async function deletePostAction(postId: number) {
 
     return { success: true };
   } catch (error) {
-    console.error("포스트 삭제 실패:", error);
-    const errorMessage =
-      error instanceof Error
-        ? error.message
-        : "포스트 삭제 중 오류가 발생했습니다.";
-    return { error: errorMessage };
+    // Log error server-side only (don't expose details to client)
+    console.error('[POST_DELETE_ERROR]', {
+      timestamp: new Date().toISOString(),
+      postId,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+    return { error: "포스트 삭제 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요." };
   }
 }

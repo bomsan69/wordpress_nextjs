@@ -2,6 +2,16 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
+  // Force HTTPS in production
+  if (
+    process.env.NODE_ENV === "production" &&
+    request.headers.get("x-forwarded-proto") !== "https"
+  ) {
+    const httpsUrl = new URL(request.url);
+    httpsUrl.protocol = "https:";
+    return NextResponse.redirect(httpsUrl, 301);
+  }
+
   const session = request.cookies.get("wp-admin-session");
   const isLoginPage = request.nextUrl.pathname === "/login";
   const isAuthenticated = !!session;
@@ -16,7 +26,18 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/posts", request.url));
   }
 
-  return NextResponse.next();
+  // Add security headers
+  const response = NextResponse.next();
+
+  // Cache control for sensitive pages
+  if (!isLoginPage) {
+    response.headers.set(
+      "Cache-Control",
+      "no-store, no-cache, must-revalidate, private"
+    );
+  }
+
+  return response;
 }
 
 export const config = {

@@ -6,18 +6,32 @@ FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# package.json과 package-lock.json 복사
+# Copy package files first
 COPY package.json package-lock.json* ./
+
+# Install dependencies as root, then change ownership
 RUN npm ci
+
+# Create non-root user and change ownership
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs && \
+    chown -R nextjs:nodejs /app
 
 # 빌드 단계
 FROM base AS builder
 WORKDIR /app
+
+# Copy dependencies and source code
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Next.js 빌드
+# Next.js 빌드 (as root for write permissions during build)
 RUN npm run build
+
+# Create non-root user and change ownership of built files
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs && \
+    chown -R nextjs:nodejs /app
 
 # 프로덕션 이미지
 FROM base AS runner

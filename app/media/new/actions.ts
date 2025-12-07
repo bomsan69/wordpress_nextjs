@@ -2,8 +2,25 @@
 
 import { uploadMedia } from "@/lib/wordpress";
 import { redirect } from "next/navigation";
+import { getSession } from "@/lib/auth";
+import { validateCsrfToken } from "@/lib/csrf";
+import { validateFile } from "@/lib/validation";
 
 export async function uploadMediaAction(formData: FormData) {
+  // Authentication check
+  const isAuthenticated = await getSession();
+  if (!isAuthenticated) {
+    throw new Error("인증이 필요합니다. 다시 로그인해주세요.");
+  }
+
+  // CSRF protection
+  const csrfToken = formData.get("csrf-token") as string;
+  const isValidCsrf = await validateCsrfToken(csrfToken);
+
+  if (!isValidCsrf) {
+    throw new Error("잘못된 요청입니다. 페이지를 새로고침 후 다시 시도해주세요.");
+  }
+
   const file = formData.get("file") as File;
   const title = formData.get("title") as string;
 
@@ -11,13 +28,22 @@ export async function uploadMediaAction(formData: FormData) {
     throw new Error("파일과 제목을 모두 입력해주세요.");
   }
 
+  // Validate file
+  const validation = await validateFile(file);
+  if (!validation.valid) {
+    throw new Error(validation.error);
+  }
+
   try {
     await uploadMedia(file, title);
   } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(`업로드 실패: ${error.message}`);
-    }
-    throw new Error("이미지 업로드에 실패했습니다.");
+    console.error('[MEDIA_UPLOAD_ERROR]', {
+      timestamp: new Date().toISOString(),
+      fileName: file.name,
+      fileSize: file.size,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+    throw new Error("이미지 업로드에 실패했습니다. 잠시 후 다시 시도해주세요.");
   }
 
   redirect("/media");

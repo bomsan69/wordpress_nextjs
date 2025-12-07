@@ -2,8 +2,24 @@
 
 import { updatePost } from "@/lib/wordpress";
 import { revalidatePath } from "next/cache";
+import { getSession } from "@/lib/auth";
+import { validateCsrfToken } from "@/lib/csrf";
 
 export async function updateExistingPost(postId: number, formData: FormData) {
+  // Authentication check
+  const isAuthenticated = await getSession();
+  if (!isAuthenticated) {
+    return { error: "인증이 필요합니다. 다시 로그인해주세요." };
+  }
+
+  // CSRF protection
+  const csrfToken = formData.get("csrf-token") as string;
+  const isValidCsrf = await validateCsrfToken(csrfToken);
+
+  if (!isValidCsrf) {
+    return { error: "잘못된 요청입니다. 페이지를 새로고침 후 다시 시도해주세요." };
+  }
+
   const title = formData.get("title") as string;
   const content = formData.get("content") as string;
   const categories = formData.get("categories") as string;
@@ -28,11 +44,12 @@ export async function updateExistingPost(postId: number, formData: FormData) {
 
     return { success: true, postId };
   } catch (error) {
-    console.error("Post update error:", error);
-    const errorMessage =
-      error instanceof Error
-        ? error.message
-        : "포스트 수정 중 오류가 발생했습니다. WordPress 연동 설정을 확인해주세요.";
-    return { error: errorMessage };
+    // Log error server-side only (don't expose details to client)
+    console.error('[POST_UPDATE_ERROR]', {
+      timestamp: new Date().toISOString(),
+      postId,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+    return { error: "포스트 수정 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요." };
   }
 }

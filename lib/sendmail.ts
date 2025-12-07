@@ -1,5 +1,14 @@
-const EMAIL_API_URL = process.env.EMAIL_API_URL || "http://apisvr.boranet.net:3300/api/v2/send";
-const EMAIL_API_KEY = process.env.EMAIL_API_KEY || "d91f0a72929403aee77799434c9a0fd230e681ff0bb095d3dc556393ab752c50";
+// Validate and store email API credentials
+function getEmailCredentials(): { url: string; key: string } {
+  const url = process.env.EMAIL_API_URL;
+  const key = process.env.EMAIL_API_KEY;
+
+  if (!url || !key) {
+    throw new Error("Email API credentials not configured. Please set EMAIL_API_URL and EMAIL_API_KEY in environment variables.");
+  }
+
+  return { url, key };
+}
 
 export interface SendEmailParams {
   to: string;
@@ -8,12 +17,14 @@ export interface SendEmailParams {
 }
 
 export async function sendEmail({ to, title, content }: SendEmailParams): Promise<void> {
+  const { url, key } = getEmailCredentials();
+
   try {
-    const response = await fetch(EMAIL_API_URL, {
+    const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "api_key": EMAIL_API_KEY,
+        "api_key": key,
       },
       body: JSON.stringify({
         to,
@@ -27,9 +38,16 @@ export async function sendEmail({ to, title, content }: SendEmailParams): Promis
       throw new Error(`이메일 발송 실패: ${response.status} ${errorText}`);
     }
 
-    console.log(`이메일 발송 성공: ${to}`);
+    // Log success without sensitive data
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[EMAIL_SENT] timestamp=${Date.now()}`);
+    }
   } catch (error) {
-    console.error("이메일 발송 중 오류:", error);
-    throw error;
+    // Log error without exposing sensitive details
+    console.error('[EMAIL_ERROR]', {
+      timestamp: new Date().toISOString(),
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+    throw new Error('이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.');
   }
 }
