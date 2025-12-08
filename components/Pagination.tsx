@@ -20,10 +20,10 @@ export function Pagination({ currentPage, totalPages }: PaginationProps) {
   if (totalPages <= 1) return null;
 
   return (
-    <div className="flex justify-center items-center space-x-4 mt-8">
+    <div className="flex justify-center items-center gap-2 sm:gap-4 mt-6 sm:mt-8">
       <Link
         href={createPageURL(currentPage - 1)}
-        className={`px-6 py-3 rounded-lg text-senior-base ${
+        className={`px-4 sm:px-6 py-3 rounded-lg text-senior-sm sm:text-senior-base ${
           currentPage === 1
             ? "bg-gray-200 text-gray-400 cursor-not-allowed pointer-events-none"
             : "bg-blue-600 text-white hover:bg-blue-700"
@@ -32,13 +32,13 @@ export function Pagination({ currentPage, totalPages }: PaginationProps) {
         이전
       </Link>
 
-      <span className="text-senior-lg font-medium">
+      <span className="text-senior-base sm:text-senior-lg font-medium px-2">
         {currentPage} / {totalPages}
       </span>
 
       <Link
         href={createPageURL(currentPage + 1)}
-        className={`px-6 py-3 rounded-lg text-senior-base ${
+        className={`px-4 sm:px-6 py-3 rounded-lg text-senior-sm sm:text-senior-base ${
           currentPage === totalPages
             ? "bg-gray-200 text-gray-400 cursor-not-allowed pointer-events-none"
             : "bg-blue-600 text-white hover:bg-blue-700"

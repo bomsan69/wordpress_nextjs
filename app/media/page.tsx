@@ -27,16 +27,16 @@ export default async function MediaPage({ searchParams }: PageProps) {
 
       <main className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="px-6 py-4 border-b-2 border-gray-200 flex justify-between items-center">
+          <div className="px-4 sm:px-6 py-4 border-b-2 border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h1 className="text-senior-2xl font-bold">미디어 목록</h1>
-              <p className="text-senior-base text-gray-600 mt-2">
+              <h1 className="text-senior-xl sm:text-senior-2xl font-bold">미디어 목록</h1>
+              <p className="text-senior-sm sm:text-senior-base text-gray-600 mt-2">
                 전체 {mediaResponse.total}개
               </p>
             </div>
             <Link
               href="/media/new"
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg text-senior-lg font-medium hover:bg-blue-700 transition-colors"
+              className="w-full sm:w-auto text-center bg-blue-600 text-white px-6 py-3 rounded-lg text-senior-base sm:text-senior-lg font-medium hover:bg-blue-700 transition-colors"
             >
               이미지 등록
             </Link>

@@ -33,9 +33,9 @@ export default async function SendEmailPage({ params }: PageProps) {
       <Navbar />
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg shadow-md p-8">
-          <h1 className="text-senior-2xl font-bold mb-2">이메일 보내기</h1>
-          <p className="text-senior-base text-gray-600 mb-6">
+        <div className="bg-white rounded-lg shadow-md p-4 sm:p-8">
+          <h1 className="text-senior-xl sm:text-senior-2xl font-bold mb-2">이메일 보내기</h1>
+          <p className="text-senior-sm sm:text-senior-base text-gray-600 mb-6 break-words">
             포스트: {post.title.rendered}
           </p>
 

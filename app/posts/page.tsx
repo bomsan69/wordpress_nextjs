@@ -74,17 +74,17 @@ export default async function PostsPage({ searchParams }: PageProps) {
         />
 
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="px-6 py-4 border-b-2 border-gray-200">
-            <h1 className="text-senior-2xl font-bold">포스트 목록</h1>
-            <p className="text-senior-base text-gray-600 mt-2">
+          <div className="px-4 sm:px-6 py-4 border-b-2 border-gray-200">
+            <h1 className="text-senior-xl sm:text-senior-2xl font-bold">포스트 목록</h1>
+            <p className="text-senior-sm sm:text-senior-base text-gray-600 mt-2">
               전체 {postsResponse.total}개
             </p>
           </div>
 
           <div className="divide-y divide-gray-200">
             {postsResponse.data.length === 0 ? (
-              <div className="px-6 py-12 text-center">
-                <p className="text-senior-lg text-gray-500">
+              <div className="px-4 sm:px-6 py-12 text-center">
+                <p className="text-senior-base sm:text-senior-lg text-gray-500">
                   등록된 포스트가 없습니다.
                 </p>
               </div>
@@ -108,7 +108,7 @@ export default async function PostsPage({ searchParams }: PageProps) {
             )}
           </div>
 
-          <div className="px-6 py-6 border-t-2 border-gray-200">
+          <div className="px-4 sm:px-6 py-4 sm:py-6 border-t-2 border-gray-200">
             <Pagination
               currentPage={filters.page || 1}
               totalPages={postsResponse.totalPages}

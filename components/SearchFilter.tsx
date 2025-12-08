@@ -121,11 +121,11 @@ export function SearchFilter({ categories, users, currentPeriod }: SearchFilterP
           </div>
         </div>
 
-        <div className="flex space-x-4">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
           <button
             type="submit"
             disabled={isPending}
-            className="flex-1 bg-blue-600 text-white px-6 py-4 rounded-lg text-senior-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+            className="flex-1 bg-blue-600 text-white px-6 py-4 rounded-lg text-senior-base sm:text-senior-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
           >
             {isPending ? (
               <>
@@ -159,7 +159,7 @@ export function SearchFilter({ categories, users, currentPeriod }: SearchFilterP
             type="button"
             onClick={handleReset}
             disabled={isPending}
-            className="flex-1 bg-gray-300 text-gray-700 px-6 py-4 rounded-lg text-senior-lg font-medium hover:bg-gray-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 bg-gray-300 text-gray-700 px-6 py-4 rounded-lg text-senior-base sm:text-senior-lg font-medium hover:bg-gray-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             초기화
           </button>

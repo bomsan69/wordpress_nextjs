@@ -42,14 +42,14 @@ export default async function EditPostPage({ params }: PageProps) {
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="px-8 py-6 border-b-2 border-gray-200">
-            <h1 className="text-senior-2xl font-bold">포스트 수정</h1>
-            <p className="text-senior-base text-gray-600 mt-2">
+          <div className="px-4 sm:px-8 py-4 sm:py-6 border-b-2 border-gray-200">
+            <h1 className="text-senior-xl sm:text-senior-2xl font-bold">포스트 수정</h1>
+            <p className="text-senior-sm sm:text-senior-base text-gray-600 mt-2">
               Draft 상태의 포스트만 수정할 수 있습니다
             </p>
           </div>
 
-          <div className="px-8 py-8">
+          <div className="px-4 sm:px-8 py-6 sm:py-8">
             <PostEditForm
               post={post}
               categories={categories}

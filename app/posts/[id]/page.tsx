@@ -55,12 +55,12 @@ export default async function PostDetailPage({ params }: PageProps) {
         </div>
 
         <article className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="px-8 py-6 border-b-2 border-gray-200">
-            <div className="flex justify-between items-start mb-4">
-              <h1 className="text-senior-3xl font-bold flex-1">
+          <div className="px-4 sm:px-8 py-4 sm:py-6 border-b-2 border-gray-200">
+            <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4 mb-4">
+              <h1 className="text-senior-xl sm:text-senior-2xl lg:text-senior-3xl font-bold flex-1 break-words">
                 {post.title.rendered}
               </h1>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-shrink-0">
                 <span
                   className={`px-3 py-1 rounded-full text-senior-sm font-medium ${
                     post.status === "publish"
@@ -75,32 +75,32 @@ export default async function PostDetailPage({ params }: PageProps) {
                 )}
               </div>
             </div>
-            <div className="flex flex-wrap gap-4 text-senior-base text-gray-600">
+            <div className="flex flex-wrap gap-2 sm:gap-4 text-senior-sm sm:text-senior-base text-gray-600">
               <span>작성자: {author}</span>
-              <span>|</span>
+              <span className="hidden sm:inline">|</span>
               <span>{new Date(post.date).toLocaleDateString("ko-KR")}</span>
               {categoryNames.length > 0 && (
                 <>
-                  <span>|</span>
+                  <span className="hidden sm:inline">|</span>
                   <span>카테고리: {categoryNames.join(", ")}</span>
                 </>
               )}
             </div>
           </div>
 
-          <div className="px-8 py-8">
+          <div className="px-4 sm:px-8 py-6 sm:py-8">
             <div
-              className="prose prose-lg max-w-none text-senior-base leading-relaxed"
+              className="prose prose-lg max-w-none text-senior-sm sm:text-senior-base leading-relaxed"
               dangerouslySetInnerHTML={{ __html: sanitizedContent }}
               style={{
-                fontSize: "20px",
+                fontSize: "clamp(18px, 4vw, 20px)",
                 lineHeight: "1.8",
               }}
             />
           </div>
 
-          <div className="px-8 py-6 border-t-2 border-gray-200 bg-gray-50">
-            <div className="text-senior-base text-gray-600">
+          <div className="px-4 sm:px-8 py-4 sm:py-6 border-t-2 border-gray-200 bg-gray-50">
+            <div className="text-senior-sm sm:text-senior-base text-gray-600">
               <p>최종 수정: {new Date(post.modified).toLocaleString("ko-KR")}</p>
             </div>
           </div>

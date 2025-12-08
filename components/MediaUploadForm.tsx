@@ -188,11 +188,11 @@ export function MediaUploadForm() {
         </div>
       )}
 
-      <div className="flex space-x-4">
+      <div>
         <button
           type="submit"
           disabled={isUploading || !selectedFile || !title}
-          className="flex-1 bg-blue-600 text-white px-6 py-4 rounded-lg text-senior-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+          className="w-full bg-blue-600 text-white px-6 py-4 rounded-lg text-senior-base sm:text-senior-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
         >
           {isUploading ? (
             <>

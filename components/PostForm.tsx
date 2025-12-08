@@ -152,17 +152,17 @@ export function PostForm({ categories, users }: PostFormProps) {
         </div>
       )}
 
-      <div className="flex space-x-4 pt-4">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4">
         <button
           type="submit"
           disabled={isSubmitting}
-          className="flex-1 bg-blue-600 text-white px-6 py-4 rounded-lg text-senior-lg font-medium hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+          className="flex-1 bg-blue-600 text-white px-6 py-4 rounded-lg text-senior-base sm:text-senior-lg font-medium hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
         >
           {isSubmitting ? "등록 중..." : "포스트 등록"}
         </button>
         <a
           href="/posts"
-          className="flex-1 bg-gray-300 text-gray-700 px-6 py-4 rounded-lg text-senior-lg font-medium hover:bg-gray-400 transition-colors text-center"
+          className="flex-1 bg-gray-300 text-gray-700 px-6 py-4 rounded-lg text-senior-base sm:text-senior-lg font-medium hover:bg-gray-400 transition-colors text-center"
         >
           취소
         </a>

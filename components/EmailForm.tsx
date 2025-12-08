@@ -86,18 +86,18 @@ export function EmailForm({ post }: EmailFormProps) {
         />
       </div>
 
-      <div className="flex gap-4">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
         <button
           type="submit"
           disabled={isSubmitting}
-          className="flex-1 bg-green-600 text-white px-6 py-4 rounded-lg text-senior-lg font-medium hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed min-h-[48px]"
+          className="flex-1 bg-green-600 text-white px-6 py-4 rounded-lg text-senior-base sm:text-senior-lg font-medium hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed min-h-[48px]"
         >
           {isSubmitting ? "발송 중..." : "이메일 발송"}
         </button>
         <button
           type="button"
           onClick={() => router.push("/posts")}
-          className="flex-1 bg-gray-300 text-gray-700 px-6 py-4 rounded-lg text-senior-lg font-medium hover:bg-gray-400 transition-colors min-h-[48px]"
+          className="flex-1 bg-gray-300 text-gray-700 px-6 py-4 rounded-lg text-senior-base sm:text-senior-lg font-medium hover:bg-gray-400 transition-colors min-h-[48px]"
         >
           취소
         </button>
