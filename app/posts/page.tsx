@@ -41,15 +41,15 @@ export default async function PostsPage({ searchParams }: PageProps) {
     dateFrom = date.toISOString().split("T")[0];
   }
 
-  // 오늘 등록한 포스트를 포함하기 위해 종료일에 +1일
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  // Scheduled 포스트를 포함하기 위해 종료일을 3개월 후로 설정
+  const futureDate = new Date(today);
+  futureDate.setMonth(futureDate.getMonth() + 3);
 
   const filters: PostFilters = {
     page: params.page ? parseInt(params.page) : 1,
     perPage: 10,
     dateFrom,
-    dateTo: tomorrow.toISOString().split("T")[0],
+    dateTo: futureDate.toISOString().split("T")[0],
     categories: params.categories
       ? params.categories.split(",").map((id) => parseInt(id))
       : undefined,

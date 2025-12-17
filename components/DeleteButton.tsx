@@ -7,9 +7,11 @@ import { deletePostAction, getCsrfTokenAction } from "@/app/posts/[id]/actions";
 interface DeleteButtonProps {
   postId: number;
   postTitle: string;
+  className?: string;
+  buttonText?: string;
 }
 
-export function DeleteButton({ postId, postTitle }: DeleteButtonProps) {
+export function DeleteButton({ postId, postTitle, className, buttonText }: DeleteButtonProps) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
   const [csrfToken, setCsrfToken] = useState<string>("");
@@ -43,6 +45,7 @@ export function DeleteButton({ postId, postTitle }: DeleteButtonProps) {
       const result = await deletePostAction(postId, csrfToken);
 
       if (result.error) {
+        console.error("Delete failed:", result.error);
         alert(`삭제 실패: ${result.error}`);
         setIsDeleting(false);
       } else {
@@ -51,6 +54,7 @@ export function DeleteButton({ postId, postTitle }: DeleteButtonProps) {
         router.refresh();
       }
     } catch (error) {
+      console.error("Delete error:", error);
       alert("삭제 중 오류가 발생했습니다.");
       setIsDeleting(false);
     }
@@ -60,9 +64,12 @@ export function DeleteButton({ postId, postTitle }: DeleteButtonProps) {
     <button
       onClick={handleDelete}
       disabled={isDeleting || !csrfToken}
-      className="px-6 py-3 bg-red-600 text-white rounded-lg text-senior-base font-medium hover:bg-red-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed min-h-[48px]"
+      className={
+        className ||
+        "px-6 py-3 bg-red-600 text-white rounded-lg text-senior-base font-medium hover:bg-red-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed min-h-[48px]"
+      }
     >
-      {isDeleting ? "삭제 중..." : "삭제"}
+      {isDeleting ? "삭제 중..." : buttonText || "삭제"}
     </button>
   );
 }

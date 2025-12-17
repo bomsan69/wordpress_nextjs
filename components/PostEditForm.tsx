@@ -4,6 +4,8 @@ import { WPCategory, WPUser, WPPost } from "@/types/wordpress";
 import { updateExistingPost, getEditCsrfToken } from "@/app/edit/[id]/actions";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { DeleteButton } from "@/components/DeleteButton";
+import { TiptapEditor } from "@/components/TiptapEditor";
 
 interface PostEditFormProps {
   post: WPPost;
@@ -14,6 +16,7 @@ interface PostEditFormProps {
 export function PostEditForm({ post, categories, users }: PostEditFormProps) {
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [content, setContent] = useState(post.content.rendered);
   const [contentLength, setContentLength] = useState(
     post.content.rendered.replace(/<[^>]*>/g, "").length
   );
@@ -46,12 +49,12 @@ export function PostEditForm({ post, categories, users }: PostEditFormProps) {
     }
   }
 
-  function handleContentChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
-    setContentLength(e.target.value.length);
+  function handleContentChange(html: string) {
+    setContent(html);
+    // HTML 태그 제거하여 순수 텍스트 길이 계산
+    const plainText = html.replace(/<[^>]*>/g, "");
+    setContentLength(plainText.length);
   }
-
-  // HTML 태그 제거하여 순수 텍스트만 추출
-  const plainContent = post.content.rendered.replace(/<[^>]*>/g, "");
 
   return (
     <form ref={formRef} action={handleSubmit} className="space-y-8">
@@ -83,15 +86,11 @@ export function PostEditForm({ post, categories, users }: PostEditFormProps) {
         >
           본문 <span className="text-red-500">*</span>
         </label>
-        <textarea
-          id="content"
-          name="content"
-          required
-          rows={15}
-          defaultValue={plainContent}
-          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-senior-base focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
-          placeholder="본문을 입력하세요"
+        <input type="hidden" name="content" value={content} required />
+        <TiptapEditor
+          content={content}
           onChange={handleContentChange}
+          placeholder="본문을 입력하세요"
         />
         <div className="mt-2 text-right">
           <span className="text-senior-base text-gray-600">
@@ -170,6 +169,14 @@ export function PostEditForm({ post, categories, users }: PostEditFormProps) {
         >
           취소
         </a>
+        <div className="flex-1">
+          <DeleteButton
+            postId={post.id}
+            postTitle={post.title.rendered}
+            buttonText="포스트 삭제"
+            className="w-full px-6 py-4 bg-red-600 text-white rounded-lg text-senior-base sm:text-senior-lg font-medium hover:bg-red-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+          />
+        </div>
       </div>
     </form>
   );

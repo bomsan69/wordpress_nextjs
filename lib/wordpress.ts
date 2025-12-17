@@ -87,7 +87,7 @@ export async function getPosts(
     page: page.toString(),
     per_page: perPage.toString(),
     _embed: "1", // 작성자 정보 포함
-    status: "publish,draft", // publish와 draft 포스트 모두 조회
+    status: "publish,draft,future", // publish, draft, scheduled 포스트 모두 조회
   });
 
   if (dateFrom) {
@@ -218,7 +218,7 @@ export async function getUsers(): Promise<WPUser[]> {
 
 // 포스트 삭제
 export async function deletePost(id: number): Promise<void> {
-  await wpFetch(`/posts/${id}`, {
+  await wpFetch(`/posts/${id}?force=true`, {
     method: "DELETE",
   });
 }

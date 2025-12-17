@@ -37,3 +37,6 @@ AGENTS.md
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+.github
+CICD_SETUP_SUMMARY.md

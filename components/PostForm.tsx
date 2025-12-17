@@ -4,6 +4,7 @@ import { WPCategory, WPUser } from "@/types/wordpress";
 import { createNewPost, getPostCsrfToken } from "@/app/posts/new/actions";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { TiptapEditor } from "@/components/TiptapEditor";
 
 interface PostFormProps {
   categories: WPCategory[];
@@ -13,6 +14,7 @@ interface PostFormProps {
 export function PostForm({ categories, users }: PostFormProps) {
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [content, setContent] = useState("");
   const [contentLength, setContentLength] = useState(0);
   const [csrfToken, setCsrfToken] = useState<string>("");
   const formRef = useRef<HTMLFormElement>(null);
@@ -45,14 +47,18 @@ export function PostForm({ categories, users }: PostFormProps) {
     } else if (result?.success && result.postId) {
       // 성공: 폼 초기화 후 리스트 페이지로 이동
       formRef.current?.reset();
+      setContent("");
       setContentLength(0);
       router.refresh(); // 클라이언트 캐시 갱신
       router.push("/posts");
     }
   }
 
-  function handleContentChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
-    setContentLength(e.target.value.length);
+  function handleContentChange(html: string) {
+    setContent(html);
+    // HTML 태그 제거하여 순수 텍스트 길이 계산
+    const plainText = html.replace(/<[^>]*>/g, "");
+    setContentLength(plainText.length);
   }
 
   return (
@@ -84,14 +90,11 @@ export function PostForm({ categories, users }: PostFormProps) {
         >
           본문 <span className="text-red-500">*</span>
         </label>
-        <textarea
-          id="content"
-          name="content"
-          required
-          rows={15}
-          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-senior-base focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
-          placeholder="본문을 입력하세요"
+        <input type="hidden" name="content" value={content} required />
+        <TiptapEditor
+          content={content}
           onChange={handleContentChange}
+          placeholder="본문을 입력하세요"
         />
         <div className="mt-2 text-right">
           <span className="text-senior-base text-gray-600">

@@ -42,10 +42,16 @@ export function PostListItem({
                 className={`px-3 py-1 rounded-full text-senior-sm font-medium flex-shrink-0 self-start ${
                   post.status === "publish"
                     ? "bg-green-100 text-green-800"
+                    : post.status === "future"
+                    ? "bg-blue-100 text-blue-800"
                     : "bg-yellow-100 text-yellow-800"
                 }`}
               >
-                {post.status === "publish" ? "publish" : "draft"}
+                {post.status === "publish"
+                  ? "publish"
+                  : post.status === "future"
+                  ? "scheduled"
+                  : "draft"}
               </span>
             </div>
             <div className="flex flex-wrap gap-2 sm:gap-4 text-senior-sm sm:text-senior-base text-gray-600">
@@ -62,7 +68,7 @@ export function PostListItem({
           </Link>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0 self-start lg:self-auto">
-          {post.status === "draft" ? (
+          {post.status === "draft" || post.status === "future" ? (
             <button
               onClick={handleEditClick}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg text-senior-sm sm:text-senior-base hover:bg-blue-700 transition-colors whitespace-nowrap"
