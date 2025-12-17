@@ -164,7 +164,7 @@ export function PostEditForm({ post, categories, users }: PostEditFormProps) {
           {isSubmitting ? "수정 중..." : "포스트 수정"}
         </button>
         <a
-          href={`/posts/${post.id}`}
+          href={`/posts`}
           className="flex-1 bg-gray-300 text-gray-700 px-6 py-4 rounded-lg text-senior-base sm:text-senior-lg font-medium hover:bg-gray-400 transition-colors text-center"
         >
           취소
