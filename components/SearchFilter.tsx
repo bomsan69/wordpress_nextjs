@@ -14,7 +14,11 @@ export function SearchFilter({ categories, users, currentPeriod }: SearchFilterP
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
+  const [isExpanded, setIsExpanded] = useState(true);
 
+  const [searchQuery, setSearchQuery] = useState(
+    searchParams.get("search") || ""
+  );
   const [period, setPeriod] = useState(
     searchParams.get("period") || currentPeriod || "1m"
   );
@@ -29,6 +33,7 @@ export function SearchFilter({ categories, users, currentPeriod }: SearchFilterP
     e.preventDefault();
 
     const params = new URLSearchParams();
+    if (searchQuery) params.set("search", searchQuery);
     if (period) params.set("period", period);
     if (selectedCategories) params.set("categories", selectedCategories);
     if (selectedAuthor) params.set("author", selectedAuthor);
@@ -40,21 +45,85 @@ export function SearchFilter({ categories, users, currentPeriod }: SearchFilterP
   }
 
   function handleReset() {
+    setSearchQuery("");
     setPeriod("1m");
     setSelectedCategories("");
     setSelectedAuthor("");
     router.push("/posts");
   }
 
+  // 활성화된 필터 개수 계산
+  const activeFiltersCount = [
+    searchQuery,
+    period !== "1m" ? period : null,
+    selectedCategories,
+    selectedAuthor,
+  ].filter(Boolean).length;
+
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-      <h2 className="text-senior-xl font-bold mb-6">검색 필터</h2>
-      <form onSubmit={handleSearch} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="md:col-span-2">
-            <label className="block text-senior-lg font-medium mb-3">
-              기간
+    <div className="bg-white rounded-lg shadow-md mb-6">
+      <div className="p-4 sm:p-6 flex justify-between items-center border-b-2 border-gray-200">
+        <div className="flex items-center gap-3">
+          <h2 className="text-senior-lg sm:text-senior-xl font-bold">검색 및 필터</h2>
+          {activeFiltersCount > 0 && (
+            <span className="px-3 py-1 bg-blue-600 text-white rounded-full text-senior-sm font-medium">
+              {activeFiltersCount}개 적용
+            </span>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="text-gray-600 hover:text-gray-900 transition-colors p-2"
+          aria-label={isExpanded ? "필터 접기" : "필터 펼치기"}
+        >
+          <svg
+            className={`w-6 h-6 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+      </div>
+
+      {isExpanded && (
+        <form onSubmit={handleSearch} className="p-4 sm:p-6 space-y-6">
+          <div>
+            <label htmlFor="search" className="block text-senior-lg font-medium mb-3">
+              검색
             </label>
+            <div className="relative">
+              <input
+                id="search"
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="제목 또는 내용으로 검색..."
+                className="w-full pl-12 pr-4 py-3 border-2 border-gray-300 rounded-lg text-senior-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+              <svg
+                className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="md:col-span-2">
+              <label className="block text-senior-lg font-medium mb-3">
+                기간
+              </label>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {[
                 { value: "1m", label: "1달" },
@@ -164,7 +233,8 @@ export function SearchFilter({ categories, users, currentPeriod }: SearchFilterP
             초기화
           </button>
         </div>
-      </form>
+        </form>
+      )}
     </div>
   );
 }

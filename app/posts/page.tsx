@@ -13,6 +13,7 @@ interface PageProps {
     period?: string;
     categories?: string;
     author?: string;
+    search?: string;
   }>;
 }
 
@@ -54,6 +55,7 @@ export default async function PostsPage({ searchParams }: PageProps) {
       ? params.categories.split(",").map((id) => parseInt(id))
       : undefined,
     author: params.author ? parseInt(params.author) : undefined,
+    search: params.search,
   };
 
   const [postsResponse, categories, users] = await Promise.all([
