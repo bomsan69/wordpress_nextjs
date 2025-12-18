@@ -81,6 +81,7 @@ export async function getPosts(
     author,
     page = 1,
     perPage = 10,
+    search,
   } = filters;
 
   const params = new URLSearchParams({
@@ -101,6 +102,9 @@ export async function getPosts(
   }
   if (author) {
     params.append("author", author.toString());
+  }
+  if (search) {
+    params.append("search", search);
   }
 
   const endpoint = `/posts?${params.toString()}`;

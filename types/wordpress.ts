@@ -97,6 +97,7 @@ export interface PostFilters {
   author?: number;
   page?: number;
   perPage?: number;
+  search?: string;
 }
 
 export interface WPMedia {
