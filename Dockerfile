@@ -28,6 +28,9 @@ COPY . .
 # Next.js 빌드 (as root for write permissions during build)
 RUN npm run build
 
+# public 디렉토리가 없으면 생성 (빈 디렉토리라도 COPY 실패 방지)
+RUN mkdir -p /app/public
+
 # Create non-root user and change ownership of built files
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs && \
