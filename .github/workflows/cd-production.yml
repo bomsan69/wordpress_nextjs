@@ -100,9 +100,20 @@ jobs:
         shell: bash
         run: |
           set -e
-          curl -L -o cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
-          sudo dpkg -i cloudflared.deb
-          cloudflared --version
+          # cloudflared가 이미 설치되어 있는지 확인
+          if command -v cloudflared &> /dev/null; then
+            echo "cloudflared is already installed"
+            cloudflared --version
+            exit 0
+          fi
+
+          # 설치되어 있지 않으면 바이너리로 직접 설치 (sudo 불필요)
+          curl -L -o cloudflared https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
+          chmod +x cloudflared
+          mkdir -p $HOME/.local/bin
+          mv cloudflared $HOME/.local/bin/
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          $HOME/.local/bin/cloudflared --version
 
       - name: Setup SSH key
         shell: bash
@@ -220,9 +231,20 @@ jobs:
         shell: bash
         run: |
           set -e
-          curl -L -o cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
-          sudo dpkg -i cloudflared.deb
-          cloudflared --version
+          # cloudflared가 이미 설치되어 있는지 확인
+          if command -v cloudflared &> /dev/null; then
+            echo "cloudflared is already installed"
+            cloudflared --version
+            exit 0
+          fi
+
+          # 설치되어 있지 않으면 바이너리로 직접 설치 (sudo 불필요)
+          curl -L -o cloudflared https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
+          chmod +x cloudflared
+          mkdir -p $HOME/.local/bin
+          mv cloudflared $HOME/.local/bin/
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          $HOME/.local/bin/cloudflared --version
 
       - name: Setup SSH key
         shell: bash
