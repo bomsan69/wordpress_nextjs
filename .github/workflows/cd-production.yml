@@ -1,0 +1,265 @@
+name: CD - Production Deployment
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+
+concurrency:
+  group: production-deployment
+  cancel-in-progress: false
+
+jobs:
+  build-and-push:
+    name: Build and Push Docker Image
+    runs-on: [self-hosted, linux]
+    environment: production
+
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-digest: ${{ steps.build.outputs.digest }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKER_USERNAME }}/ksenior-app
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=production
+            type=raw,value={{date 'YYYYMMDD-HHmmss'}}
+
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NODE_ENV=production
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ secrets.DOCKER_USERNAME }}/ksenior-app:production
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+        continue-on-error: true
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+        continue-on-error: true
+
+      - name: Output build information
+        run: |
+          echo "Image Tags: ${{ steps.meta.outputs.tags }}"
+          echo "Image Digest: ${{ steps.build.outputs.digest }}"
+          echo "Build completed at: $(date)"
+
+  deploy-to-server:
+    name: Deploy to Production Server (via Cloudflare Access SSH)
+    runs-on: [self-hosted, linux]
+    needs: build-and-push
+    environment: production
+
+    steps:
+      - name: Install cloudflared
+        shell: bash
+        run: |
+          set -e
+          curl -L -o cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+          sudo dpkg -i cloudflared.deb
+          cloudflared --version
+
+      - name: Setup SSH key
+        shell: bash
+        run: |
+          set -e
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PRODUCTION_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          touch ~/.ssh/known_hosts
+          ssh-keyscan -H ssh.askmebysms.com >> ~/.ssh/known_hosts
+
+      - name: Deploy to server via Cloudflare Access SSH
+        shell: bash
+        env:
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          DEPLOY_PATH: ${{ secrets.PRODUCTION_DEPLOY_PATH }}
+          SERVER_USER: ${{ secrets.PRODUCTION_SERVER_USER }}
+        run: |
+          set -euo pipefail
+
+          # 기본값 처리
+          DEPLOY_PATH="${DEPLOY_PATH:-/opt/ksenior}"
+
+          # 원격에서 실행할 스크립트
+          REMOTE_SCRIPT=$(cat <<'EOF'
+          set -euo pipefail
+          cd "$DEPLOY_PATH"
+
+          docker compose pull
+          docker compose up -d --remove-orphans
+          docker image prune -f
+
+          echo "Waiting for container to be healthy..."
+          sleep 10
+
+          docker ps | grep ksenior-app
+          echo "Recent logs:"
+          docker compose logs --tail=20 ksenior-app
+          EOF
+          )
+
+          ssh -i ~/.ssh/id_ed25519 \
+            -o StrictHostKeyChecking=yes \
+            -o ProxyCommand="cloudflared access ssh --hostname ssh.askmebysms.com --service-token-id $CF_ACCESS_CLIENT_ID --service-token-secret $CF_ACCESS_CLIENT_SECRET" \
+            "$SERVER_USER@ssh.askmebysms.com" \
+            "DEPLOY_PATH='$DEPLOY_PATH' bash -lc '$REMOTE_SCRIPT'"
+
+      - name: Health check after deployment
+        shell: bash
+        run: |
+          set -e
+          sleep 15
+
+          # (1) 외부 URL이 있으면 그걸로 체크
+          if [ -n "${{ secrets.PRODUCTION_APP_URL }}" ]; then
+            URL="${{ secrets.PRODUCTION_APP_URL }}/api/health"
+            response=$(curl -s -o /dev/null -w "%{http_code}" "$URL" || echo "000")
+            echo "Health URL: $URL"
+          else
+            # (2) 외부 URL이 없으면 서버 내부에서 체크(권장)
+            #    -> 위 SSH를 재사용하거나, 앱이 공개되어 있다면 외부 URL을 세팅하세요.
+            echo "PRODUCTION_APP_URL is not set. Consider setting it (recommended)."
+            response="000"
+          fi
+
+          if [ "$response" = "200" ] || [ "$response" = "404" ]; then
+            echo "Application is responding (Status: $response)"
+            exit 0
+          else
+            echo "Health check failed with status: $response"
+            exit 1
+          fi
+        continue-on-error: true
+
+  notify-deployment:
+    name: Deployment Notification
+    runs-on: [self-hosted, linux]
+    needs: [build-and-push, deploy-to-server]
+    if: always()
+
+    steps:
+      - name: Send Slack notification
+        if: secrets.SLACK_WEBHOOK_URL != ''
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ needs.deploy-to-server.result }}
+          text: |
+            Production Deployment ${{ needs.deploy-to-server.result }}
+            Branch: ${{ github.ref }}
+            Commit: ${{ github.sha }}
+            Author: ${{ github.actor }}
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+        continue-on-error: true
+
+      - name: Deployment summary
+        run: |
+          echo "## Production Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Branch: \`${{ github.ref }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Commit: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Image: \`${{ needs.build-and-push.outputs.image-tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Deployment Status: \`${{ needs.deploy-to-server.result }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Deployed at: \`$(date)\`" >> $GITHUB_STEP_SUMMARY
+
+  rollback:
+    name: Rollback to Previous Version
+    runs-on: [self-hosted, linux]
+    needs: [deploy-to-server]
+    if: failure() && github.event_name == 'workflow_dispatch'
+    environment: production
+
+    steps:
+      - name: Install cloudflared
+        shell: bash
+        run: |
+          set -e
+          curl -L -o cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+          sudo dpkg -i cloudflared.deb
+          cloudflared --version
+
+      - name: Setup SSH key
+        shell: bash
+        run: |
+          set -e
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PRODUCTION_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          touch ~/.ssh/known_hosts
+          ssh-keyscan -H ssh.askmebysms.com >> ~/.ssh/known_hosts
+
+      - name: Rollback deployment via Cloudflare Access SSH
+        shell: bash
+        env:
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          DEPLOY_PATH: ${{ secrets.PRODUCTION_DEPLOY_PATH }}
+          SERVER_USER: ${{ secrets.PRODUCTION_SERVER_USER }}
+        run: |
+          set -euo pipefail
+          DEPLOY_PATH="${DEPLOY_PATH:-/opt/ksenior}"
+
+          REMOTE_SCRIPT=$(cat <<'EOF'
+          set -euo pipefail
+          cd "$DEPLOY_PATH"
+
+          echo "Rolling back to previous version..."
+          docker compose down
+          docker compose up -d --force-recreate
+
+          echo "Rollback completed"
+          docker ps | grep ksenior-app
+          EOF
+          )
+
+          ssh -i ~/.ssh/id_ed25519 \
+            -o StrictHostKeyChecking=yes \
+            -o ProxyCommand="cloudflared access ssh --hostname ssh.askmebysms.com --service-token-id $CF_ACCESS_CLIENT_ID --service-token-secret $CF_ACCESS_CLIENT_SECRET" \
+            "$SERVER_USER@ssh.askmebysms.com" \
+            "DEPLOY_PATH='$DEPLOY_PATH' bash -lc '$REMOTE_SCRIPT'"

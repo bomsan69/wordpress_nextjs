@@ -38,5 +38,5 @@ AGENTS.md
 *.tsbuildinfo
 next-env.d.ts
 
-.github
+# Ignore CI/CD setup summary (내부 문서)
 CICD_SETUP_SUMMARY.md

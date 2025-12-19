@@ -1,0 +1,301 @@
+name: PR - Pull Request Checks
+
+# Pull Request에 대한 추가 검증 및 정보 제공
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [develop, staging, master]
+
+# PR당 하나씩만 실행
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  # Job 1: PR 정보 및 변경사항 분석
+  pr-info:
+    name: PR Information & Analysis
+    runs-on: [self-hosted, linux]
+    if: github.event.pull_request.draft == false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Analyze PR changes
+        id: analyze
+        run: |
+          # 변경된 파일 수 계산
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | wc -l)
+          echo "changed_files=$CHANGED_FILES" >> $GITHUB_OUTPUT
+
+          # 추가/삭제 라인 수
+          ADDITIONS=$(git diff --numstat origin/${{ github.base_ref }}...HEAD | awk '{sum+=$1} END {print sum}')
+          DELETIONS=$(git diff --numstat origin/${{ github.base_ref }}...HEAD | awk '{sum+=$2} END {print sum}')
+          echo "additions=$ADDITIONS" >> $GITHUB_OUTPUT
+          echo "deletions=$DELETIONS" >> $GITHUB_OUTPUT
+
+          # 변경된 파일 타입 분석
+          echo "### Changed File Types" > pr_analysis.md
+          git diff --name-only origin/${{ github.base_ref }}...HEAD | sed 's/.*\.//' | sort | uniq -c | sort -rn >> pr_analysis.md
+
+      - name: Check for sensitive files
+        id: sensitive-check
+        run: |
+          SENSITIVE_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -E '\.(env|key|pem|p12|pfx|cer|crt|der|secret)$' || true)
+
+          if [ -n "$SENSITIVE_FILES" ]; then
+            echo "warning=true" >> $GITHUB_OUTPUT
+            echo "### ⚠️ Warning: Sensitive Files Detected" >> pr_analysis.md
+            echo "\`\`\`" >> pr_analysis.md
+            echo "$SENSITIVE_FILES" >> pr_analysis.md
+            echo "\`\`\`" >> pr_analysis.md
+            echo "Please ensure no secrets are committed!" >> pr_analysis.md
+          else
+            echo "warning=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check for large files
+        id: large-files
+        run: |
+          LARGE_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | xargs -I {} sh -c 'if [ -f {} ] && [ $(stat -f%z {} 2>/dev/null || stat -c%s {} 2>/dev/null || echo 0) -gt 1048576 ]; then echo "{}"; fi' || true)
+
+          if [ -n "$LARGE_FILES" ]; then
+            echo "warning=true" >> $GITHUB_OUTPUT
+            echo "### ⚠️ Warning: Large Files Detected (>1MB)" >> pr_analysis.md
+            echo "\`\`\`" >> pr_analysis.md
+            echo "$LARGE_FILES" >> pr_analysis.md
+            echo "\`\`\`" >> pr_analysis.md
+          else
+            echo "warning=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate PR summary
+        run: |
+          echo "## 📊 Pull Request Analysis" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Changes Overview" >> $GITHUB_STEP_SUMMARY
+          echo "- 📁 Files changed: ${{ steps.analyze.outputs.changed_files }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ➕ Lines added: ${{ steps.analyze.outputs.additions }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ➖ Lines deleted: ${{ steps.analyze.outputs.deletions }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f pr_analysis.md ]; then
+            cat pr_analysis.md >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Comment PR with analysis
+        if: steps.sensitive-check.outputs.warning == 'true' || steps.large-files.outputs.warning == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let comment = '## 🔍 Automated PR Review\n\n';
+
+            if (fs.existsSync('pr_analysis.md')) {
+              comment += fs.readFileSync('pr_analysis.md', 'utf8');
+            }
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+  # Job 2: 의존성 변경 체크
+  dependency-review:
+    name: Dependency Review
+    runs-on: [self-hosted, linux]
+    if: github.event.pull_request.draft == false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          deny-licenses: GPL-3.0, AGPL-3.0
+        continue-on-error: true
+
+  # Job 3: 코드 변경 영향도 분석
+  impact-analysis:
+    name: Impact Analysis
+    runs-on: [self-hosted, linux]
+    if: github.event.pull_request.draft == false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check if API routes changed
+        id: api-check
+        run: |
+          API_CHANGES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -c "app/api/" || echo "0")
+          echo "api_changes=$API_CHANGES" >> $GITHUB_OUTPUT
+
+          if [ "$API_CHANGES" -gt "0" ]; then
+            echo "### ⚠️ API Routes Modified" >> impact.md
+            echo "API routes were changed. Please ensure:" >> impact.md
+            echo "- [ ] API documentation is updated" >> impact.md
+            echo "- [ ] Backward compatibility is maintained" >> impact.md
+            echo "- [ ] API tests are updated" >> impact.md
+            echo "" >> impact.md
+          fi
+
+      - name: Check if Docker config changed
+        id: docker-check
+        run: |
+          DOCKER_CHANGES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -E "(Dockerfile|docker-compose)" || echo "")
+
+          if [ -n "$DOCKER_CHANGES" ]; then
+            echo "docker_changed=true" >> $GITHUB_OUTPUT
+            echo "### 🐋 Docker Configuration Changed" >> impact.md
+            echo "Docker files were modified:" >> impact.md
+            echo "\`\`\`" >> impact.md
+            echo "$DOCKER_CHANGES" >> impact.md
+            echo "\`\`\`" >> impact.md
+            echo "Please ensure:" >> impact.md
+            echo "- [ ] Docker build still works" >> impact.md
+            echo "- [ ] Image size is reasonable" >> impact.md
+            echo "- [ ] All required environment variables are documented" >> impact.md
+            echo "" >> impact.md
+          else
+            echo "docker_changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check if security files changed
+        id: security-check
+        run: |
+          SECURITY_CHANGES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -E "(middleware|auth|login|security)" || echo "")
+
+          if [ -n "$SECURITY_CHANGES" ]; then
+            echo "security_changed=true" >> $GITHUB_OUTPUT
+            echo "### 🔒 Security-Related Changes Detected" >> impact.md
+            echo "Files with security implications were modified:" >> impact.md
+            echo "\`\`\`" >> impact.md
+            echo "$SECURITY_CHANGES" >> impact.md
+            echo "\`\`\`" >> impact.md
+            echo "⚠️ **Security Review Required**" >> impact.md
+            echo "Please ensure:" >> impact.md
+            echo "- [ ] Security best practices are followed" >> impact.md
+            echo "- [ ] No credentials are hardcoded" >> impact.md
+            echo "- [ ] Authentication/authorization logic is correct" >> impact.md
+            echo "" >> impact.md
+          else
+            echo "security_changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Post impact analysis
+        if: steps.api-check.outputs.api_changes != '0' || steps.docker-check.outputs.docker_changed == 'true' || steps.security-check.outputs.security_changed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            if (fs.existsSync('impact.md')) {
+              const impact = fs.readFileSync('impact.md', 'utf8');
+              const comment = '## 📋 Impact Analysis\n\n' + impact;
+
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            }
+
+  # Job 4: PR 크기 체크 및 라벨링
+  pr-size-labeling:
+    name: PR Size Labeling
+    runs-on: [self-hosted, linux]
+    if: github.event.pull_request.draft == false
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Calculate PR size and add label
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const additions = context.payload.pull_request.additions;
+            const deletions = context.payload.pull_request.deletions;
+            const total = additions + deletions;
+
+            let size = 'XS';
+            let color = '00ff00';
+
+            if (total > 1000) {
+              size = 'XL';
+              color = 'ff0000';
+            } else if (total > 500) {
+              size = 'L';
+              color = 'ff9900';
+            } else if (total > 200) {
+              size = 'M';
+              color = 'ffff00';
+            } else if (total > 50) {
+              size = 'S';
+              color = '99ff00';
+            }
+
+            const label = `size/${size}`;
+
+            // Remove old size labels
+            const { data: labels } = await github.rest.issues.listLabelsOnIssue({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            for (const oldLabel of labels) {
+              if (oldLabel.name.startsWith('size/')) {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  name: oldLabel.name,
+                });
+              }
+            }
+
+            // Add new size label
+            try {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: [label]
+              });
+            } catch (error) {
+              // If label doesn't exist, create it
+              await github.rest.issues.createLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: label,
+                color: color,
+                description: `PR size: ${size} (${total} lines changed)`
+              });
+
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: [label]
+              });
+            }
+
+            if (size === 'XL' || size === 'L') {
+              core.warning(`This PR is quite large (${total} lines). Consider splitting it into smaller PRs for easier review.`);
+            }
