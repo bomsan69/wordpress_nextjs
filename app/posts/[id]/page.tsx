@@ -28,6 +28,8 @@ export default async function PostDetailPage({ params }: PageProps) {
     notFound();
   }
 
+//docer test
+
   const author = post._embedded?.author?.[0]?.name || "알 수 없음";
   const categoryNames =
     post._embedded?.["wp:term"]?.[0]?.map((cat) => cat.name) || [];
