@@ -147,6 +147,12 @@ jobs:
 
           # 기본값 처리
           DEPLOY_PATH="${DEPLOY_PATH:-/opt/ksenior}"
+          SERVER_USER="${SERVER_USER:-root}"
+
+          # cloudflared 경로와 환경 변수 검증
+          CLOUDFLARED_PATH=$(command -v cloudflared || echo "$HOME/.local/bin/cloudflared")
+          echo "Using cloudflared at: $CLOUDFLARED_PATH"
+          echo "Connecting as user: $SERVER_USER"
 
           # 원격에서 실행할 스크립트
           REMOTE_SCRIPT=$(cat <<'EOF'
@@ -166,15 +172,12 @@ jobs:
           EOF
           )
 
-          # cloudflared 경로 찾기 (설치된 위치를 동적으로 확인)
-          CLOUDFLARED_PATH=$(command -v cloudflared || echo "$HOME/.local/bin/cloudflared")
-
-          echo "Using cloudflared at: $CLOUDFLARED_PATH"
-
-          ssh -i ~/.ssh/id_ed25519 \
-            -o StrictHostKeyChecking=yes \
-            -o ProxyCommand="$CLOUDFLARED_PATH access ssh --hostname ssh.askmebysms.com --service-token-id $CF_ACCESS_CLIENT_ID --service-token-secret $CF_ACCESS_CLIENT_SECRET" \
-            "$SERVER_USER@ssh.askmebysms.com" \
+          # SSH 연결 및 배포 (cloudflared access ssh 사용)
+          "$CLOUDFLARED_PATH" access ssh \
+            --hostname ssh.askmebysms.com \
+            --service-token-id "$CF_ACCESS_CLIENT_ID" \
+            --service-token-secret "$CF_ACCESS_CLIENT_SECRET" \
+            -- "$SERVER_USER@ssh.askmebysms.com" \
             "DEPLOY_PATH='$DEPLOY_PATH' bash -lc '$REMOTE_SCRIPT'"
 
       - name: Health check after deployment
@@ -291,6 +294,12 @@ jobs:
         run: |
           set -euo pipefail
           DEPLOY_PATH="${DEPLOY_PATH:-/opt/ksenior}"
+          SERVER_USER="${SERVER_USER:-root}"
+
+          # cloudflared 경로와 환경 변수 검증
+          CLOUDFLARED_PATH=$(command -v cloudflared || echo "$HOME/.local/bin/cloudflared")
+          echo "Using cloudflared at: $CLOUDFLARED_PATH"
+          echo "Connecting as user: $SERVER_USER"
 
           REMOTE_SCRIPT=$(cat <<'EOF'
           set -euo pipefail
@@ -305,13 +314,10 @@ jobs:
           EOF
           )
 
-          # cloudflared 경로 찾기 (설치된 위치를 동적으로 확인)
-          CLOUDFLARED_PATH=$(command -v cloudflared || echo "$HOME/.local/bin/cloudflared")
-
-          echo "Using cloudflared at: $CLOUDFLARED_PATH"
-
-          ssh -i ~/.ssh/id_ed25519 \
-            -o StrictHostKeyChecking=yes \
-            -o ProxyCommand="$CLOUDFLARED_PATH access ssh --hostname ssh.askmebysms.com --service-token-id $CF_ACCESS_CLIENT_ID --service-token-secret $CF_ACCESS_CLIENT_SECRET" \
-            "$SERVER_USER@ssh.askmebysms.com" \
+          # SSH 연결 및 배포 (cloudflared access ssh 사용)
+          "$CLOUDFLARED_PATH" access ssh \
+            --hostname ssh.askmebysms.com \
+            --service-token-id "$CF_ACCESS_CLIENT_ID" \
+            --service-token-secret "$CF_ACCESS_CLIENT_SECRET" \
+            -- "$SERVER_USER@ssh.askmebysms.com" \
             "DEPLOY_PATH='$DEPLOY_PATH' bash -lc '$REMOTE_SCRIPT'"
