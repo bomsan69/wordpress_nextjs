@@ -159,7 +159,7 @@ jobs:
 
           # 기본값 처리
           DEPLOY_PATH="${DEPLOY_PATH:-/opt/ksenior}"
-          SERVER_USER="${SERVER_USER:-root}"
+          SERVER_USER="${SERVER_USER:-deploy}"
 
           # cloudflared 경로와 환경 변수 검증
           CLOUDFLARED_PATH=$(command -v cloudflared || echo "$HOME/.local/bin/cloudflared")
@@ -320,7 +320,7 @@ jobs:
         run: |
           set -euo pipefail
           DEPLOY_PATH="${DEPLOY_PATH:-/opt/ksenior}"
-          SERVER_USER="${SERVER_USER:-root}"
+          SERVER_USER="${SERVER_USER:-deploy}"
 
           # cloudflared 경로와 환경 변수 검증
           CLOUDFLARED_PATH=$(command -v cloudflared || echo "$HOME/.local/bin/cloudflared")
