@@ -172,12 +172,15 @@ jobs:
           EOF
           )
 
-          # SSH 연결 및 배포 (cloudflared access ssh 사용)
-          "$CLOUDFLARED_PATH" access ssh \
-            --hostname ssh.askmebysms.com \
-            --service-token-id "$CF_ACCESS_CLIENT_ID" \
-            --service-token-secret "$CF_ACCESS_CLIENT_SECRET" \
-            -- "$SERVER_USER@ssh.askmebysms.com" \
+          # SSH 연결 및 배포
+          # ProxyCommand를 완전히 치환하여 환경 변수 문제 방지
+          PROXY_CMD="$CLOUDFLARED_PATH access ssh --hostname ssh.askmebysms.com --service-token-id $CF_ACCESS_CLIENT_ID --service-token-secret $CF_ACCESS_CLIENT_SECRET"
+
+          echo "Connecting to server..."
+          ssh -i ~/.ssh/id_ed25519 \
+            -o StrictHostKeyChecking=yes \
+            -o "ProxyCommand=$PROXY_CMD" \
+            "${SERVER_USER}@ssh.askmebysms.com" \
             "DEPLOY_PATH='$DEPLOY_PATH' bash -lc '$REMOTE_SCRIPT'"
 
       - name: Health check after deployment
@@ -314,10 +317,13 @@ jobs:
           EOF
           )
 
-          # SSH 연결 및 배포 (cloudflared access ssh 사용)
-          "$CLOUDFLARED_PATH" access ssh \
-            --hostname ssh.askmebysms.com \
-            --service-token-id "$CF_ACCESS_CLIENT_ID" \
-            --service-token-secret "$CF_ACCESS_CLIENT_SECRET" \
-            -- "$SERVER_USER@ssh.askmebysms.com" \
+          # SSH 연결 및 배포
+          # ProxyCommand를 완전히 치환하여 환경 변수 문제 방지
+          PROXY_CMD="$CLOUDFLARED_PATH access ssh --hostname ssh.askmebysms.com --service-token-id $CF_ACCESS_CLIENT_ID --service-token-secret $CF_ACCESS_CLIENT_SECRET"
+
+          echo "Connecting to server..."
+          ssh -i ~/.ssh/id_ed25519 \
+            -o StrictHostKeyChecking=yes \
+            -o "ProxyCommand=$PROXY_CMD" \
+            "${SERVER_USER}@ssh.askmebysms.com" \
             "DEPLOY_PATH='$DEPLOY_PATH' bash -lc '$REMOTE_SCRIPT'"
