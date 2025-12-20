@@ -131,9 +131,21 @@ jobs:
             exit 1
           fi
 
-          # known_hosts 설정 (실패해도 계속 진행 - ProxyCommand가 호스트 키를 처리)
+          # SSH config 설정
+          # Cloudflare Access SSH를 통한 연결에서는 known_hosts를 통한 전통적인 호스트 키 검증이
+          # 어려우므로, accept-new를 사용하여 첫 연결 시 키를 수락하고 이후 변경 시 경고
+          cat > ~/.ssh/config <<'SSHCONFIG'
+          Host ssh.askmebysms.com
+            StrictHostKeyChecking accept-new
+            UserKnownHostsFile ~/.ssh/known_hosts
+            LogLevel ERROR
+          SSHCONFIG
+
+          chmod 600 ~/.ssh/config
           touch ~/.ssh/known_hosts
-          ssh-keyscan -H ssh.askmebysms.com >> ~/.ssh/known_hosts 2>/dev/null || echo "Warning: ssh-keyscan failed, but will continue (ProxyCommand will handle host key)"
+          chmod 644 ~/.ssh/known_hosts
+
+          echo "SSH configuration completed"
 
       - name: Deploy to server via Cloudflare Access SSH
         shell: bash
@@ -178,7 +190,6 @@ jobs:
 
           echo "Connecting to server..."
           ssh -i ~/.ssh/id_ed25519 \
-            -o StrictHostKeyChecking=yes \
             -o "ProxyCommand=$PROXY_CMD" \
             "${SERVER_USER}@ssh.askmebysms.com" \
             "DEPLOY_PATH='$DEPLOY_PATH' bash -lc '$REMOTE_SCRIPT'"
@@ -283,9 +294,21 @@ jobs:
             exit 1
           fi
 
-          # known_hosts 설정 (실패해도 계속 진행 - ProxyCommand가 호스트 키를 처리)
+          # SSH config 설정
+          # Cloudflare Access SSH를 통한 연결에서는 known_hosts를 통한 전통적인 호스트 키 검증이
+          # 어려우므로, accept-new를 사용하여 첫 연결 시 키를 수락하고 이후 변경 시 경고
+          cat > ~/.ssh/config <<'SSHCONFIG'
+          Host ssh.askmebysms.com
+            StrictHostKeyChecking accept-new
+            UserKnownHostsFile ~/.ssh/known_hosts
+            LogLevel ERROR
+          SSHCONFIG
+
+          chmod 600 ~/.ssh/config
           touch ~/.ssh/known_hosts
-          ssh-keyscan -H ssh.askmebysms.com >> ~/.ssh/known_hosts 2>/dev/null || echo "Warning: ssh-keyscan failed, but will continue (ProxyCommand will handle host key)"
+          chmod 644 ~/.ssh/known_hosts
+
+          echo "SSH configuration completed"
 
       - name: Rollback deployment via Cloudflare Access SSH
         shell: bash
@@ -323,7 +346,6 @@ jobs:
 
           echo "Connecting to server..."
           ssh -i ~/.ssh/id_ed25519 \
-            -o StrictHostKeyChecking=yes \
             -o "ProxyCommand=$PROXY_CMD" \
             "${SERVER_USER}@ssh.askmebysms.com" \
             "DEPLOY_PATH='$DEPLOY_PATH' bash -lc '$REMOTE_SCRIPT'"
