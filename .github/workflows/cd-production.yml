@@ -166,9 +166,14 @@ jobs:
           EOF
           )
 
+          # cloudflared 경로 찾기 (설치된 위치를 동적으로 확인)
+          CLOUDFLARED_PATH=$(command -v cloudflared || echo "$HOME/.local/bin/cloudflared")
+
+          echo "Using cloudflared at: $CLOUDFLARED_PATH"
+
           ssh -i ~/.ssh/id_ed25519 \
             -o StrictHostKeyChecking=yes \
-            -o ProxyCommand="cloudflared access ssh --hostname ssh.askmebysms.com --service-token-id $CF_ACCESS_CLIENT_ID --service-token-secret $CF_ACCESS_CLIENT_SECRET" \
+            -o ProxyCommand="$CLOUDFLARED_PATH access ssh --hostname ssh.askmebysms.com --service-token-id $CF_ACCESS_CLIENT_ID --service-token-secret $CF_ACCESS_CLIENT_SECRET" \
             "$SERVER_USER@ssh.askmebysms.com" \
             "DEPLOY_PATH='$DEPLOY_PATH' bash -lc '$REMOTE_SCRIPT'"
 
@@ -300,8 +305,13 @@ jobs:
           EOF
           )
 
+          # cloudflared 경로 찾기 (설치된 위치를 동적으로 확인)
+          CLOUDFLARED_PATH=$(command -v cloudflared || echo "$HOME/.local/bin/cloudflared")
+
+          echo "Using cloudflared at: $CLOUDFLARED_PATH"
+
           ssh -i ~/.ssh/id_ed25519 \
             -o StrictHostKeyChecking=yes \
-            -o ProxyCommand="cloudflared access ssh --hostname ssh.askmebysms.com --service-token-id $CF_ACCESS_CLIENT_ID --service-token-secret $CF_ACCESS_CLIENT_SECRET" \
+            -o ProxyCommand="$CLOUDFLARED_PATH access ssh --hostname ssh.askmebysms.com --service-token-id $CF_ACCESS_CLIENT_ID --service-token-secret $CF_ACCESS_CLIENT_SECRET" \
             "$SERVER_USER@ssh.askmebysms.com" \
             "DEPLOY_PATH='$DEPLOY_PATH' bash -lc '$REMOTE_SCRIPT'"
