@@ -2,6 +2,7 @@ version: '3.8'
 
 services:
   ksenior-app:
+    image: atozjames/ksenior-app:production
     build:
       context: .
       dockerfile: Dockerfile
