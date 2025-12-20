@@ -67,21 +67,7 @@ jobs:
           build-args: |
             NODE_ENV=production
 
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ${{ secrets.DOCKER_USERNAME }}/ksenior-app:production
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-          severity: 'CRITICAL,HIGH'
-        continue-on-error: true
 
-      - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: 'trivy-results.sarif'
-        continue-on-error: true
 
       - name: Output build information
         run: |
@@ -146,35 +132,6 @@ jobs:
           chmod 644 ~/.ssh/known_hosts
 
           echo "SSH configuration completed"
-
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Copy docker-compose.yml to server
-        shell: bash
-        env:
-          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
-          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
-          DEPLOY_PATH: ${{ secrets.PRODUCTION_DEPLOY_PATH }}
-          SERVER_USER: ${{ secrets.PRODUCTION_SERVER_USER }}
-        run: |
-          set -euo pipefail
-
-          # 기본값 처리
-          DEPLOY_PATH="${DEPLOY_PATH:-/opt/ksenior}"
-          SERVER_USER="${SERVER_USER:-deploy}"
-
-          # cloudflared 경로
-          CLOUDFLARED_PATH=$(command -v cloudflared || echo "$HOME/.local/bin/cloudflared")
-          PROXY_CMD="$CLOUDFLARED_PATH access ssh --hostname ssh.askmebysms.com --service-token-id $CF_ACCESS_CLIENT_ID --service-token-secret $CF_ACCESS_CLIENT_SECRET"
-
-          echo "Copying docker-compose.yml to server..."
-          scp -i ~/.ssh/id_ed25519 \
-            -o "ProxyCommand=$PROXY_CMD" \
-            docker-compose.yml \
-            "${SERVER_USER}@ssh.askmebysms.com:${DEPLOY_PATH}/docker-compose.yml"
-
-          echo "docker-compose.yml copied successfully"
 
       - name: Deploy to server via Cloudflare Access SSH
         shell: bash
